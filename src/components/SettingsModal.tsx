@@ -1448,7 +1448,7 @@ export default function SettingsModal() {
                   className="w-full rounded-xl border border-blue-200/70 bg-white/80 px-3 py-2.5 text-sm text-blue-900 outline-none transition focus:border-blue-300 dark:border-blue-400/20 dark:bg-gray-950/40 dark:text-blue-100 dark:focus:border-blue-500/50"
                 />
                 <div data-selectable-text className="mt-2 text-xs leading-relaxed text-blue-800 dark:text-blue-200">
-                  只用于首页 Amazon 面板的 AI 策划；生图仍使用上方当前配置。默认分为「生图」和「AI策划」两套配置：生图使用 Images API + gpt-image-2，AI 策划使用 Responses API + gpt-5.5。
+                  只用于首页 Amazon 面板的 AI 策划；普通生图只接受当前配置为 Images API。默认分为「生图」和「AI策划」两套配置：生图使用 Images API + gpt-image-2，AI 策划使用 Responses API + gpt-5.5。
                 </div>
               </div>
 
@@ -1612,7 +1612,7 @@ export default function SettingsModal() {
                   ) : activeCustomProvider ? (
                     <>当前使用 <code className="rounded bg-gray-100 px-1 py-0.5 dark:bg-white/[0.06]">{activeCustomProvider.name}</code>。</>
                   ) : (activeProfile.apiMode ?? DEFAULT_SETTINGS.apiMode) === 'responses' ? (
-                    <>Responses API 需要使用支持 <code className="rounded bg-gray-100 px-1 py-0.5 dark:bg-white/[0.06]">image_generation</code> 工具的文本模型，例如 <code className="rounded bg-gray-100 px-1 py-0.5 dark:bg-white/[0.06]">{DEFAULT_RESPONSES_MODEL}</code>。</>
+                    <>Responses API 用于 Agent 或 AI 策划等文本/多模态流程；普通生图请切换到 Images API 配置。</>
                   ) : (activeProfile.apiMode ?? DEFAULT_SETTINGS.apiMode) === 'chat' ? (
                     <>Chat Completions 用于 AI 策划文本模型，默认 <code className="rounded bg-gray-100 px-1 py-0.5 dark:bg-white/[0.06]">{DEFAULT_CHAT_MODEL}</code>；生图请使用 Images API 配置。</>
                   ) : (

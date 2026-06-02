@@ -94,7 +94,7 @@ vi.mock('./lib/agentApi', () => ({
 }))
 import { clearAmazonPlannerSessions, clearImages, getAllAmazonPlannerSessions, putAmazonPlannerSession, putImage } from './lib/db'
 import { callAgentResponsesApi, callBatchImageSingle } from './lib/agentApi'
-import { cleanStaleAgentInputDrafts, clearData, editOutputs, exportData, getErrorToastMessage, getPersistedState, getTaskApiProfile, importData, markInterruptedOpenAIRunningTasks, mergePersistedState, regenerateAgentAssistantMessage, removeTask, reuseConfig, submitAgentMessage, submitTask, useStore } from './store'
+import { cleanStaleAgentInputDrafts, clearData, editOutputs, exportData, getErrorToastMessage, getPersistedState, getTaskApiProfile, importData, markInterruptedOpenAIRunningTasks, mergePersistedState, regenerateAgentAssistantMessage, removeTask, retryTask, reuseConfig, submitAgentMessage, submitTask, useStore } from './store'
 
 const imageA = { id: 'image-a', dataUrl: 'data:image/png;base64,a' }
 const imageB = { id: 'image-b', dataUrl: 'data:image/png;base64,b' }
@@ -268,6 +268,65 @@ describe('mask draft lifecycle in store actions', () => {
     expect(submitted).toBe(true)
     expect(state.tasks).toHaveLength(1)
     expect(state.showToast).toHaveBeenCalledWith('任务已提交', 'success')
+  })
+
+  it.each([
+    { apiMode: 'chat' as const, model: 'deepseek-v4-flash', label: 'Chat Completions' },
+    { apiMode: 'responses' as const, model: DEFAULT_RESPONSES_MODEL, label: 'Responses API' },
+  ])('blocks gallery submit with a switch-config dialog when the active profile is $label', async ({ apiMode, model, label }) => {
+    const plannerProfile = createDefaultOpenAIProfile({
+      id: `planner-profile-${apiMode}`,
+      name: 'AI策划',
+      apiKey: 'planner-key',
+      apiMode,
+      model,
+    })
+    useStore.setState({
+      settings: normalizeSettings({
+        profiles: [plannerProfile],
+        activeProfileId: plannerProfile.id,
+      }),
+    })
+
+    const submitted = await submitTask()
+
+    const state = useStore.getState()
+    expect(submitted).toBe(false)
+    expect(state.tasks).toHaveLength(0)
+    expect(state.setConfirmDialog).toHaveBeenCalledWith(expect.objectContaining({
+      title: '当前配置不能生图',
+      confirmText: '去切换配置',
+      cancelText: '取消',
+      message: expect.stringContaining(label),
+    }))
+    expect(state.setConfirmDialog).toHaveBeenCalledWith(expect.objectContaining({
+      message: expect.stringContaining('普通生图只支持 Images API'),
+    }))
+  })
+
+  it('blocks retry with a switch-config dialog when the active profile is Responses API', async () => {
+    const responseProfile = createDefaultOpenAIProfile({
+      id: 'responses-profile',
+      name: 'AI策划',
+      apiKey: 'planner-key',
+      apiMode: 'responses',
+      model: DEFAULT_RESPONSES_MODEL,
+    })
+    useStore.setState({
+      settings: normalizeSettings({
+        profiles: [responseProfile],
+        activeProfileId: responseProfile.id,
+      }),
+    })
+
+    await retryTask(task())
+
+    const state = useStore.getState()
+    expect(state.tasks).toHaveLength(0)
+    expect(state.setConfirmDialog).toHaveBeenCalledWith(expect.objectContaining({
+      title: '当前配置不能生图',
+      message: expect.stringContaining('Responses API'),
+    }))
   })
 
   it('returns false when submit is blocked before creating a task', async () => {

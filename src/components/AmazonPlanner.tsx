@@ -289,6 +289,7 @@ export default function AmazonPlanner() {
   const setParams = useStore((s) => s.setParams)
   const setPendingTaskCategory = useStore((s) => s.setPendingTaskCategory)
   const setShowSettings = useStore((s) => s.setShowSettings)
+  const setConfirmDialog = useStore((s) => s.setConfirmDialog)
   const removeInputImage = useStore((s) => s.removeInputImage)
   const clearInputImages = useStore((s) => s.clearInputImages)
   const setInputImages = useStore((s) => s.setInputImages)
@@ -643,9 +644,17 @@ export default function AmazonPlanner() {
       setShowSettings(true, 'api')
       return
     }
-    if (imageProfile.apiMode === 'chat') {
-      showToast('风格板需要使用 Images API 或 Responses API 生图配置，不能使用 Chat Completions 策划配置。', 'error')
-      setShowSettings(true, 'api')
+    if (imageProfile.apiMode !== 'images') {
+      const apiModeLabel = imageProfile.apiMode === 'responses' ? 'Responses API' : 'Chat Completions'
+      setConfirmDialog({
+        title: '当前配置不能生图',
+        message: `当前配置「${imageProfile.name}」使用 ${apiModeLabel}，普通生图只支持 Images API。生成风格板前，请切换到 Images API 生图配置。`,
+        confirmText: '去切换配置',
+        cancelText: '取消',
+        action: () => {
+          setShowSettings(true, 'api')
+        },
+      })
       return
     }
 

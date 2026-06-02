@@ -1954,6 +1954,19 @@ export async function submitTask(options: { allowFullMask?: boolean; useCurrentA
     }
   }
 
+  if (activeProfile.apiMode !== 'images') {
+    setConfirmDialog({
+      title: '当前配置不能生图',
+      message: `当前配置「${activeProfile.name}」使用 ${getApiModeApiName(activeProfile.apiMode)}，普通生图只支持 Images API。生成图片前，请切换到 Images API 生图配置。`,
+      confirmText: '去切换配置',
+      cancelText: '取消',
+      action: () => {
+        useStore.getState().setShowSettings(true, 'api')
+      },
+    })
+    return false
+  }
+
   if (validateApiProfile(activeProfile)) {
     showToast(`请先完善请求 API 配置：${validateApiProfile(activeProfile)}`, 'error')
     useStore.getState().setShowSettings(true)
@@ -3755,8 +3768,20 @@ export function updateTaskInStore(taskId: string, patch: Partial<TaskRecord>) {
 
 /** 重试失败的任务：创建新任务并执行 */
 export async function retryTask(task: TaskRecord) {
-  const { settings } = useStore.getState()
+  const { settings, setConfirmDialog } = useStore.getState()
   const activeProfile = getActiveApiProfile(settings)
+  if (activeProfile.apiMode !== 'images') {
+    setConfirmDialog({
+      title: '当前配置不能生图',
+      message: `当前配置「${activeProfile.name}」使用 ${getApiModeApiName(activeProfile.apiMode)}，普通生图只支持 Images API。重试图片前，请切换到 Images API 生图配置。`,
+      confirmText: '去切换配置',
+      cancelText: '取消',
+      action: () => {
+        useStore.getState().setShowSettings(true, 'api')
+      },
+    })
+    return
+  }
   const normalizedParams = normalizeParamsForSettings(task.params, settings, { hasInputImages: task.inputImageIds.length > 0 })
   const taskId = genId()
   const newTask: TaskRecord = {
